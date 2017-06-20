@@ -87,10 +87,39 @@ int main() {
           // j[1] is the data JSON object
           vector<double> ptsx = j[1]["ptsx"];
           vector<double> ptsy = j[1]["ptsy"];
-          double px = j[1]["x"];
-          double py = j[1]["y"];
+          double px  = j[1]["x"];
+          double py  = j[1]["y"];
           double psi = j[1]["psi"];
-          double v = j[1]["speed"];
+          double v   = j[1]["speed"];
+          double throttle       = j[1]["throttle"];
+          double steering_angle = j[1]["steering_angle"];
+
+          // transform to car coordinates
+          Eigen::VectorXd ptsx_xd(ptsx.size()); 
+          Eigen::VectorXd ptsy_xd(ptsx.size());
+          for ( int t = 0; t < ptsx.size(); t++ ) {
+            ptsx_xd[t]   =   (ptsx[t] - px) * cos(psi) + (ptsy[t] - py) * sin(psi);
+            ptsy_xd[t]   = - (ptsx[t] - px) * sin(psi) + (ptsy[t] - py) * cos(psi);
+            // We also need these for traj plotting
+            ptsx[t]      = ptsx_xd[t];
+            ptsy[t]      = ptsy_xd[t];
+          }
+
+          // Convert to polynomial representation
+          Eigen::VectorXd fit = polyfit(ptsx_xd, ptsy_xd, 3);
+
+          // Compensate latency
+          double latency = 0.10;
+          double Lf      = 2.67;
+
+          v = v * 0.44704;// conversion to MPS
+
+          double psi_fix   = - v * steering_angle * latency / Lf;
+          double v_fix     = v + throttle * latency;
+          double px_fix    = v * latency;
+          double py_fix    = 0; // I have some experience with y and vy compensation due to changing road model but it is not trivial!
+          double cte_fix   = fit[0] + v * sin(psi - atan(fit[1])) * latency;
+          double epsi_fix  = psi - atan(fit[1] + 2.0 * fit[2] * px_fix + 3.0 * fit[3] * px_fix * px_fix );
 
           /*
           * TODO: Calculate steering angle and throttle using MPC.
@@ -98,18 +127,24 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+
+          Eigen::VectorXd state(6);
+          state << px_fix, py_fix, psi_fix, v_fix, cte_fix, epsi_fix;
+          vector<double> solution = mpc.Solve(state, fit);
+
+          double steer_value    = solution[0];
+          double throttle_value = solution[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
+          // performance is much worse if I do so, is the above comment outdated?
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
-          vector<double> mpc_x_vals;
-          vector<double> mpc_y_vals;
+          vector<double> mpc_x_vals = mpc.path_x;
+          vector<double> mpc_y_vals = mpc.path_y;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
@@ -118,8 +153,8 @@ int main() {
           msgJson["mpc_y"] = mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          vector<double> next_x_vals = ptsx;
+          vector<double> next_y_vals = ptsy;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line

@@ -1,6 +1,15 @@
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
+## Model
+
+[//]: # (Image References)
+[image1]: ./img/model.jpg
+
+I had quite high hopes of using MPC as it falls squarely into what I could call the 'sumulationist' approach, though instead of searching over a graph, directly exploiting the model information to minimize a cost function. It seems my hope was well placed, but MPC is no inherently magical. The model used is the standard seen in the course, so I will simply show the equations:
+
+![alt text][image1]
+
 ---
 
 ## Dependencies
