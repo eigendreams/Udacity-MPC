@@ -10,6 +10,20 @@ I had quite high hopes of using MPC as it falls squarely into what I could call 
 
 ![alt text][image1]
 
+I do not think there is much else to say beyond mentioning that this is a purely kinematic model, with no regards to dynamics, and also, that the wheels slip and friction was not considered at all. A more robust implementation ought to do so, but this is beyond the scope of the project. In particular, since MPC relies on minimization via a Jacobian and maybe a Hessian (in Ipopt), discontinous models could be a lot of trouble, and yet they are used a lot to model highly non linear situations or even modes of operation.
+
+## Parameters
+
+Well, not much to say here, it seems that on my laptop the simulator cannot run beyond 10 Hz, so clearly dt ought to be 0.1 seconds. I tried with various values of N and 10 works well, 15 too.
+
+## Preprocessing
+
+No preprocessing is done. As you can see in the simulation, the road center tends to wooble sometimes, and a filtering stage could potentially help with that, but corner negotiation could suffer. I have encountered this kind of behavior before, if the road model is unstable, the control outputs could tend to overcompensate, leading to a positive feedback loop. If the set speed is raised enough, this will happen in my model! But it seems that there are no easy solutions to this, and a big delay only makes this worse.
+
+## Latency
+
+I think this was pretty standard. I just extrapolate the kinematic model of the vehicle using a linear approximation a bit into the future. However, the y value was set to zero, as it might exacerbate the woobling feedback loop.
+
 ---
 
 ## Dependencies

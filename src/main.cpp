@@ -116,8 +116,8 @@ int main() {
 
           double psi_fix   = - v * steering_angle * latency / Lf;
           double v_fix     = v + throttle * latency;
-          double px_fix    = v * latency;
-          double py_fix    = 0; // I have some experience with y and vy compensation due to changing road model but it is not trivial!
+          double px_fix    = v * latency; // * cos(psi);
+          double py_fix    =  0 * v * latency * sin(psi);; // I have some experience with y and vy compensation due to changing road model but it is not trivial!
           double cte_fix   = fit[0] + v * sin(psi - atan(fit[1])) * latency;
           double epsi_fix  = psi - atan(fit[1] + 2.0 * fit[2] * px_fix + 3.0 * fit[3] * px_fix * px_fix );
 
